@@ -1,22 +1,127 @@
 import math, sys, queue, threading, multiprocessing, re, signal, time
 from collections import defaultdict
 
-WAYPOINTS_FILE = 'waypoints.txt'
-GRAPH_FILE = 'landmark_hl1.txt'
+WAYPOINTS_FILE = 'waypoints_hl2.txt'
+GRAPH_FILE = 'landmark_hl2.txt'
 
-DESTINATION = ''
-WAYPOINT_DISTANCE = 800
+DESTINATION = 'd1_canals_01 at: 763 x, 3327 y, 668 z'
+WAYPOINT_DISTANCE = 4000
 
 # This transitions will not be used in routes (one way direction ban!)
 BANNED_TRANSITIONS = [
 	# from_map via_landmark to_map
 	
+	# backward transitions
+	["d1_trainstation_02","trainstation_01_to_02","d1_trainstation_01"],
+	["d1_trainstation_04","landmark_trainstation_04-05","d1_trainstation_03"],
+	["d1_trainstation_05","landmark_trainstation_04-05","d1_trainstation_04"],
+	["d1_canals_01a","canals_trans_0101a","d1_canals_01"],
+	["d1_canals_02","canals_trans_01a02","d1_canals_01a"],
+	["d1_canals_06","canals_05_06","d1_canals_05"],
+	["d1_eli_01","canals_trans_13_eli","d1_canals_13"],
+	# yet all
+	
+	# transitions to self (?)
+	["d1_trainstation_02","landmark_trainstation_02-03","d1_trainstation_02"],
+	["d1_trainstation_03","landmark_trainstation_03-04","d1_trainstation_03"],
+	["d1_trainstation_03","landmark_trainstation_02-03","d1_trainstation_03"],
+	["d1_trainstation_05","landmark_trainstation_04-05","d1_trainstation_05"],
+	["d1_canals_06","canals_05_06","d1_canals_06"],
+	["d1_canals_06","canals_06_07","d1_canals_06"],
+	["d1_canals_07","trans_canals_07_08","d1_canals_07"],
+	["d1_canals_08","trans_canals_07_08","d1_canals_08"],
+	["d1_canals_09","canals_trans_0809","d1_canals_09"],
+	["d1_canals_09","trans_canals_09_10","d1_canals_09"],
+	["d1_canals_10","trans_canals_09_10","d1_canals_10"],
+	["d1_canals_11","canals_trans_10_11","d1_canals_11"],
+	["d1_canals_11","landmark_canals_11_12","d1_canals_11"],
+	["d1_canals_12","landmark_canals_11_12","d1_canals_12"],
+	["d1_canals_12","trans_canals_12_13","d1_canals_12"],
+	["d1_canals_13","trans_canals_12_13","d1_canals_13"],
+	["d2_coast_04","landmark_d2_coast_04-05","d2_coast_04"],
+	["d2_coast_10","landmark_d2_coast_10-11","d2_coast_10"],
+	["d2_coast_11","landmark_d2_coast_10-11","d2_coast_11"],
+	["d2_coast_11","landmark_d2_coast_11-12","d2_coast_11"],
+	["d2_coast_12","landmark_d2_coast_11-12","d2_coast_12"],
+	["d2_prison_06","landmark_d2_prison_06-07","d2_prison_06"],
+	["d2_prison_07","landmark_d2_prison_06-07","d2_prison_07"],
+	["d2_prison_07","landmark_d2_prison_07-08","d2_prison_07"],
+	["d2_prison_08","landmark_d2_prison_07-08","d2_prison_08"],
+	["d3_citadel_02","trans_cit02_cit03","d3_citadel_02"],
+	["d3_citadel_03","trans_cit02_cit03","d3_citadel_03"],
+	["d3_citadel_04","trans_citadel_0304","d3_citadel_04"],
+	["d3_citadel_04","trans_cit04_cit05","d3_citadel_04"],
+	["d3_citadel_05","trans_cit04_cit05","d3_citadel_05"]
 ]
 
 VOID_MAPS = [
-	'c1a4g',
-	'c1a4j',
-	'c2a4',
+	"d1_trainstation_01",
+	"d1_trainstation_02",
+	"d1_trainstation_03",
+	"d1_trainstation_04",
+	"d1_trainstation_05",
+	"d1_trainstation_06",
+	"d1_canals_01",
+	"d1_canals_01a",
+	"d1_canals_02",
+	"d1_canals_03",
+	"d1_canals_05",
+	"d1_canals_06",
+	"d1_canals_07",
+	"d1_canals_08",
+	"d1_canals_09",
+	"d1_canals_10",
+	"d1_canals_11",
+	"d1_canals_12",
+	"d1_canals_13",
+	"d1_eli_01",
+	"d1_eli_02",
+	"d1_town_01",
+	"d1_town_01a",
+	"d1_town_02",
+	"d1_town_03",
+	"d1_town_04",
+	"d1_town_05",
+	"d2_coast_01",
+	"d2_coast_03",
+	"d2_coast_04",
+	"d2_coast_05",
+	"d2_coast_07",
+	"d2_coast_08",
+	"d2_coast_09",
+	"d2_coast_10",
+	"d2_coast_11",
+	"d2_coast_12",
+	"d2_prison_01",
+	"d2_prison_02",
+	"d2_prison_03",
+	"d2_prison_04",
+	"d2_prison_05",
+	"d2_prison_06",
+	"d2_prison_07",
+	"d2_prison_08",
+	"d3_c17_01",
+	"d3_c17_02",
+	"d3_c17_03",
+	"d3_c17_04",
+	"d3_c17_05",
+	"d3_c17_06a",
+	"d3_c17_06b",
+	"d3_c17_07",
+	"d3_c17_08",
+	"d3_c17_09",
+	"d3_c17_10a",
+	"d3_c17_10b",
+	"d3_c17_11",
+	"d3_c17_12",
+	"d3_c17_12b",
+	"d3_c17_13",
+	"d3_citadel_01",
+	"d3_citadel_02",
+	"d3_citadel_03",
+	"d3_citadel_04",
+	"d3_citadel_05",
+	"d3_breen_01"
 ]
 
 MAX_PATH_LENGTH = 35
@@ -26,7 +131,7 @@ INT_MAX = 1 << 32
 DST_MAP = ''
 DST_ORIGIN = []
 
-WARP_START_MAP = 'c1a1'
+WARP_START_MAP = 'd1_trainstation_01'
 MAIN_COORD_MAP = WARP_START_MAP
 
 THREAD_COUNT = multiprocessing.cpu_count()
@@ -102,7 +207,9 @@ def ReadGraph(filename):
 	for line in lines:
 		data = line.split(',')
 		data = [e[1:-1] for e in data]
-		Graph += [(data[0], data[1], data[2], [int(float(e)) for e in data[3].split(' ')])]
+		if data[0] == data[2]:
+			continue # weird self trigger
+		Graph += [(data[0], data[1], data[2], [float(e) for e in data[3].split(' ')])]
 	fp.close()		
 	#
 	Maps = set()
@@ -261,14 +368,14 @@ def ReadWaypoints(filename, main_map):
 		return None
 		exit(-1);
 	for line in fp:
-		data = line.split(' | ')
-		if len(data) == 2:
-			coord = [int(e) for e in data[1].split(' ')]			
-			#if data[0] not in Maps_order[:-1]:
-			#	continue
+		data = line.split()
+		if len(data) == 8:
+			coord = [float(data[2]), float(data[4]), float(data[6])]			
+			if data[0] not in Maps_order[:-1]:
+				continue
 			coord_global = FixOrigin(data[0], main_map, coord)
 			Waypoints += [[coord_global, data[0]]]
-	#print('\n'.join([str(x) for x in Waypoints]))
+	print('\n'.join([str(x) for x in Waypoints]))
 	fp.close()
 	
 def HowCloseToWaypoint(vec, isVoidMapInPath):
@@ -281,8 +388,8 @@ def HowCloseToWaypoint(vec, isVoidMapInPath):
 			info = shift_z
 		else:
 			dist = distance(point[0], vec)
-		if dist < WAYPOINT_DISTANCE:
-			return dist, point[1], info
+		if dist < WAYPOINT_DISTANCE: 
+			return dist, point[1], info # doesn't look for a mimimum, might be a problem?
 	return -1, '', 0
 	
 #
@@ -353,7 +460,7 @@ def PathFinder(q, startMapIndex, dstMapIndex):
 					print("   Destination: " + DESTINATION)
 					print("   " + str(int(dist)) + " - " + save_map)	
 					shift_vec = [0, 0, -shift_z]
-					print("   map "+save_map+";w 70;noclip;bxt_ch_set_pos " + vec_str(vec_sub(currentCoordinates_save_map, shift_vec)))
+					print("   map "+save_map+";setpos " + vec_str(vec_sub(currentCoordinates_save_map, shift_vec)))
 					if shift_vec != [0, 0, 0]:
 						print("   bxt_ch_set_pos_offset " + vec_str(shift_vec))
 					print("   // " + simplifyRoute(reverseRoute(route)))
